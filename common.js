@@ -33,3 +33,51 @@ function generateHash(config, input) {
 
 	return PassHashCommon.generateHashWord(siteName, input, config.size, config.includeDigits, config.includePunctuation, config.includeMixedCase, config.noSpecialCharacters, config.digitsOnly);
 }
+
+function getDefaultConfig() {
+	var defaultConfig = localStorage.getObject("defaultConfig");
+
+	if (defaultConfig == null) {
+		defaultConfig = {
+			includeDigits: true,
+			includePunctuation: true,
+			includeMixedCase: true,
+			noSpecialCharacters: false,
+			digitsOnly: false,
+			size: 8,
+			version: 1,
+			compatibilityMode: false,
+			seed: getSeed(),
+			fields: new Array()
+		};
+		
+		localStorage.setObject("defaultConfig", defaultConfig);
+	}
+	
+	return defaultConfig;
+}
+
+function getSeed() {
+	var seed = localStorage["privateSeed"]
+
+	// No private seed generated, create one
+	if (!seed)
+		seed = localStorage["privateSeed"] = generateGuid();
+		
+	return seed;
+}
+
+if (Storage) {
+	Storage.prototype.setObject = function(key, value) {
+		this.setItem(key, JSON.stringify(value));
+	}
+	
+	Storage.prototype.getObject = function(key) {
+		var jsonObject = this.getItem(key);
+	
+		if (jsonObject == null)
+			return null;
+	
+		return JSON.parse(jsonObject);
+	}
+}

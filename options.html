@@ -35,127 +35,159 @@
  * ***** END LICENSE BLOCK ***** */
 -->
 <html>
-<head>
-<title>Password Hasher Plus - Options</title>
-<style>
-* { font-family: Arial; font-size: 12px; }
-</style>
-<script type="text/javascript" src="lib/jquery-1.4.2.min.js"></script>
-<script type="text/javascript" src="common.js"></script>
-</head>
+	<head>
+		<title>Password Hasher Ultimate - Options</title>
+		<style type="text/css">
+			*
+			{
+				font-family: Arial;
+				font-size: 12px;
+			}
 
-<body onLoad="restore_options ()">
-<img src="images/icon.png"/>
-<h1>Password Hasher Plus - Options</h1>
-<div style="width: 500px;">
-	<table border="0">
-		<tr><td width="25%"/><td width="75%"/></tr>
-		<tr>
-			<td>Default Password Length:</td>
-			<td><select id="length">
-				<option value="2">2</option>
-				<option value="4">4</option>
-				<option value="6">6</option>
-				<option value="8">8</option>
-				<option value="10">10</option>
-				<option value="12">12</option>
-				<option value="14">14</option>
-				<option value="16">16</option>
-				<option value="18">18</option>
-				<option value="20">20</option>
-				<option value="22">22</option>
-				<option value="24">24</option>
-				<option value="26">26</option>
-			</select></td>
-		</tr>
-		<tr>
-			<td>Default Password Strength:</td>
-			<td><select id="strength">
-				<option value="2">Alphanumeric+Special</option>
-				<option value="1">Alphanumeric</option>
-				<option value="0">Numeric</option>
-			</select></td>
-		</tr>
-		<tr>
-			<td>Compatibility Mode</td>
-			<td>
-				<input id="compatibility" type="checkbox"/> Use compatibility mode (less secure).
-			</td>
-		</tr>
-		<tr>
-			<td>Private Key:</td>
-			<td>
-				<input id="seed" type="text" size="48" maxlength="45"/>
-				<input type="button" value="Generate" onClick="set_new_guid ()"/>
-			</td>
-		</tr>
-		<tr>
-			<td>Backup:</td>
-			<td>
-				<p><b>Note: You must backup this key and keep it safe and secure in case you need to restore it in the future.</b></p>
-				<input id="backedup" type="checkbox"/> I have backed up my private key.
-			</td>
-		</tr>
-		<tr>
-			<td><br/><button onClick="save_options ()">Save</button>
-			<button onClick="restore_options ()">Revert</button>
-			</td>
-		</tr>
-	</table>
-</div>
-</body>
+			label
+			{
+				width: 150px;
+				text-align: right;
+				display: inline-block;
+				float: left;
+				padding-top: 2px;
+				padding-right: 5px;
+			}
 
-<script type="text/javascript">
+			label.alignLeft
+			{
+				text-align: left !important;
+				float: none !important;
+			}
 
-function set_new_guid () {
-	var seedElement = document.getElementById ("seed");
-	seedElement.value = generate_guid ();
-}
+			span.checkboxContainer
+			{
+				display: inline-block;
+			}
 
-function save_options () {
-	localStorage["default_length"] = document.getElementById ("length").value;
-	localStorage["default_strength"] = document.getElementById ("strength").value;
-	localStorage["compatibility_mode"] = document.getElementById ("compatibility").checked;
-	localStorage["private_seed"] = document.getElementById ("seed").value;
-	localStorage["backed_up"] = document.getElementById ("backedup").checked;
-	chrome.extension.getBackgroundPage ().optionschanged ();
-}
+			#defaultsContainer
+			{
+				width: 375px;
+			}
 
-function restore_options () {
-	var length = localStorage["default_length"];
-	if (!length) {
-		length = localStorage["default_length"] = default_length;
-	}
-	document.getElementById ("length").value = length;
+			fieldset>div
+			{
+				veritical-align: top;
+			}
 
-	var strength = localStorage["default_strength"];
-	if (!strength) {
-		strength = localStorage["default_strength"] = default_strength;
-	}
-	document.getElementById ("strength").value = strength;
+			dfn
+			{
+				font-style: normal;
+				font-size: 75%;
+				vertical-align: super;
+			}
+		</style>
 
-	var compatibility = localStorage["compatibility_mode"];
-	if ("true" == compatibility) {
-		compatibility = true;
-	} else {
-		compatibility = false;
-	}
-	document.getElementById ("compatibility").checked = compatibility;
+		<script type="text/javascript" src="lib/jquery-1.7.min.js"></script>
+		<script type="text/javascript" src="common.js"></script>
 
-	var seed = localStorage["private_seed"];
-	if (!seed) {
-		seed = localStorage["private_seed"] = generate_guid ();
-	}
-	document.getElementById ("seed").value = seed;
+		<script type="text/javascript">
+			function loadConfig() {
+				var config = getDefaultConfig();
 
-	var backedup = localStorage["backed_up"];
-	if ("true" == backedup) {
-		backedup = true;
-	} else {
-		backedup = false;
-	}
-	document.getElementById ("backedup").checked = backedup;
-}
+				$("#size").val(config.size);
+				$("#compatibilityMode")[0].checked = config.compatibilityMode;
+				$("#privateKey").val(config.seed);
 
-</script>
+				$("#includeDigits")[0].checked = config.includeDigits;
+				$("#includePunctuation")[0].checked = config.includePunctuation;
+				$("#includeMixedCase")[0].checked = config.includeMixedCase;
+				$("#noSpecialCharacters")[0].checked = config.noSpecialCharacters;
+				$("#digitsOnly")[0].checked = config.digitsOnly;
+			}
+
+			function saveConfig() {
+				var config = {
+					includeDigits: $("#includeDigits").is(":checked"),
+					includePunctuation: $("#includePunctuation").is(":checked"),
+					includeMixedCase: $("#includeMixedCase").is(":checked"),
+					noSpecialCharacters: $("#noSpecialCharacters").is(":checked"),
+					digitsOnly: $("#digitsOnly").is(":checked"),
+					size: $("#size").val(),
+					version: 1,
+					compatibilityMode: $("#compatibilityMode").is(":checked"),
+					seed: $("#privateKey").val(),
+					fields: new Array()
+				}
+
+				localStorage.setObject("defaultConfig", config);
+				localStorage["privateSeed"] = config.seed;
+			}
+		</script>
+	</head>
+	<body onload="loadConfig()">
+		<h1>Password Hasher Ultimate - Options</h1>
+
+		<fieldset id="defaultsContainer">
+			<legend>Defaults</legend>
+
+			<div>
+				<label for="size">Length:</label>
+				<select id="size">
+					<option value="2">2</option>
+					<option value="4">4</option>
+					<option value="6">6</option>
+					<option value="8">8</option>
+					<option value="10">10</option>
+					<option value="12">12</option>
+					<option value="14">14</option>
+					<option value="16">16</option>
+					<option value="18">18</option>
+					<option value="20">20</option>
+					<option value="22">22</option>
+					<option value="24">24</option>
+					<option value="26">26</option>
+				</select>
+			</div>
+
+			<div>
+				<label for="compatibilityMode"><dfn title="Maintains compatibility with the Firefox PassHash extension by not performing the additional step of hashing the site name with the private key before using it to hash the password value">[?]</dfn>Use compatibility mode:</label>
+				<input type="checkbox" id="compatibilityMode"/>
+			</div>
+
+			<div>
+				<label for="privateKey">Private key:</label>
+				<input type="text" id="privateKey"/>
+				<input type="button" value="Generate" onclick="$('#privateKey').val(generateGuid());"/>
+			</div>
+
+			<div>
+				<label>Hashing options:</label>
+				<span class="checkboxContainer">
+					<div>
+						<input type="checkbox" id="includeDigits"/>
+						<label for="includeDigits" class="alignLeft">Include digits</label>
+					</div>
+
+					<div>
+						<input type="checkbox" id="includePunctuation"/>
+						<label for="includePunctuation" class="alignLeft">Include punctuation</label>
+					</div>
+
+					<div>
+						<input type="checkbox" id="includeMixedCase"/>
+						<label for="includeMixedCase" class="alignLeft">Include mixed case</label>
+					</div>
+
+					<div>
+						<input type="checkbox" id="noSpecialCharacters"/>
+						<label for="noSpecialCharacters" class="alignLeft">No special characters</label>
+					</div>
+
+					<div>
+						<input type="checkbox" id="digitsOnly"/>
+						<label for="digitsOnly" class="alignLeft">Digits only</label>
+					</div>
+				</span>
+			</div>
+		</fieldset>
+
+		<br/>
+		<input type="button" value="Save" onclick="saveConfig();"/>
+	</body>
 </html>
