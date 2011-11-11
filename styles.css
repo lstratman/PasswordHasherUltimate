@@ -33,7 +33,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-input[passhash=true] {
+input[passhash=true] 
+{
 	background-repeat: no-repeat !important;
 	background-position: right center !important;
 	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjEwMPRyoQAAAN9JREFUOE9j+P//PwM1MVUNAzkMp4F79uzhA+L/SNgOpAHIV0ATV0P2IT4DTdE0ikMNdEUS/4EeXPgMTETSeAOmEShWgiS+gRQDpyJpnIpk4AYk8RKcBgIVOaJ5ETn8CLGVYQbDvTz4DUQOC6BrM5C8fxIp/OqQxBdhyxBYYxmoaRGSxi4kA/chiWeQYuALJI3h0PTHgi2hj8YyZuEADCesOQEofhIpDBNxFXkYsQzU9ANJoys0QtBLHlOiDAQapIYWkwpQA9FLHj5iDfRFMvAFUvpDLnngCZ3odEhJlQAAU4GyB0dM0iYAAAAASUVORK5CYII=) !important;

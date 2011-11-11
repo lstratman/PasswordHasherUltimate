@@ -40,6 +40,7 @@ chrome.extension.onConnect.addListener (function (port) {
 	console.assert(port.name == "passhashultimate");
 	
 	port.onMessage.addListener (function (message) {
+		// Add the tab port to the collection and send back the config for that site
 		if (message.type == "init") {
 			portsByTabId[port.tab.id] = port;
 			
@@ -50,11 +51,13 @@ chrome.extension.onConnect.addListener (function (port) {
 			});
 		} 
 		
+		// Create the context menus for the given tab based on its configuration
 		else if (message.type == "addContextMenus") {
 			chrome.contextMenus.removeAll();
 			addContextMenus(loadConfig(port.siteName), message.fieldId, message.show);
 		}
-			
+		
+		// Kill all the context menus
 		else if (message.type == "removeContextMenus")
 			chrome.contextMenus.removeAll();
 	});
@@ -65,7 +68,16 @@ chrome.extension.onConnect.addListener (function (port) {
 	});
 });
 
+/**
+ * Creates the context menus for the given config.
+ * @param {Object} config The site configuration that the context menus should be based on.
+ * @param {String} fieldId The identifier of the field that the user is focused on when they right-clicked
+ * to bring up the context menu.
+ * @param {Boolean} show Flag indicating whether or not the user has chosen to show the value of the focused
+ * password field.
+ */
 function addContextMenus(config, fieldId, show) {
+	// Create the various context menu entries based on the configuration values
 	var topLevelMenu = chrome.contextMenus.create({
 		title: "Password hashing",
 		contexts: ["all"]
@@ -225,6 +237,7 @@ function addContextMenus(config, fieldId, show) {
 		parentId: topLevelMenu
 	});
 	
+	// Create the submenu items for the size of the generated password in a loop
 	menuItemLengths = new Object();
 	
 	for (var i = 4; i <= 26; i += 2) {
@@ -247,18 +260,27 @@ function addContextMenus(config, fieldId, show) {
 	}
 }
 
+/**
+ * Loads the configuration for the given site name.
+ * @param {String} siteName The site name whose configuration we are to look up.
+ * @returns {Object} Configuration from storage matching the given site name if it exists, the default config otherwise.
+ */
 function loadConfig(siteName) {
 	console.log("Loading config for " + siteName);
 
+	// Try to load the config from storage
 	var seed = getSeed();
 	var config = localStorage.getObject("siteName:" + siteName);
-		
+
+	// Use the default config if it doesn't exist		
 	if (config == null)
 		config = getDefaultConfig();
 
+	// Set the private key to the value set by the user in the options screen
 	config.siteName = siteName;
 	config.seed = seed;
 	
+	// Initialize any missing properties
 	if (typeof config.fields == "undefined")
 		config.fields = new Array();
 		
@@ -268,6 +290,11 @@ function loadConfig(siteName) {
 	return config;
 }
 
+/**
+ * Generates the short site name identifier for the given url (i.e. google from https://mail.google.com).
+ * @param {String} url URL for which we are to generate the site name.
+ * @returns {String} Site name for the given URL.
+ */
 function getSiteName(url) {
 	console.log("Getting site name for " + url);
 	
@@ -278,19 +305,28 @@ function getSiteName(url) {
 		if (components[2] == "")
 			throw "chrome";
 	
+		// Return the component immediately before the TLD
 		return components[2];
 	} 
 	
+	// If the URL doesn't match our regex, just return a placeholder value
 	catch (e) {
 		return "chrome";
 	}
 }
 
+/**
+ * Saves the config for the given site to storage.
+ * @param {String} siteName The name of the site for which we are saving the config.
+ * @param {Object} config Configuration that is being persisted to storage.
+ * @param {Integer} tabId Identifier of the tab for which we are saving this config.
+ */
 function saveConfig(siteName, config, tabId) {
 	console.log("Saving config for " + siteName);
 	
 	localStorage.setObject("siteName:" + siteName, config);
 
+	// Post a message back to the tab indicating whe have refreshed the config
 	if (tabId != null)
 		portsByTabId[tabId].postMessage({ 
 			type: "updateConfig",
