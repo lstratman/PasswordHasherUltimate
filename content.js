@@ -66,67 +66,74 @@ $(document).mousedown(function (e) {
 });
 
 /**
- * Event handler for when a field that is being hashed gains focus; replaces the hashed value of the password with the
- * original password.
- * @param {jQuery.Event} event Data for the input event.
- */
-function field_focus(event) {
-	var field = $(this);	
-	field.val(field.data("__passhash_input"));
-}
-
-/**
- * Event handler for when a field that is being hashed has a key press; if the Enter key is pressed, it fires the blur
- * event which hashes the password.
- * @param {jQuery.Event} event Data for the input event.
- */
-function field_keypress(event) {
-	if (event.which == 13)
-		$(this).blur();
-}
-
-/**
- * Event handler for when a field that is being hashed loses focus; saves the password that the user put in and updates
- * the value of the field with the hashed password.
- * @param {jQuery.Event} event Data for the input event.
- */
-function field_blur(event) {
-	var field = $(this);
-	
-	field.data("__passhash_input", field.val());
-	hashField(field);
-}
-
-/**
- * Event handler for when a field that is being hashed has its value changed; saves the original password that the user
- * entered.
- * @param {jQuery.Event} event Data for the input event.
- */
-function field_change(event) {
-	var field = $(this);
-	field.data("__passhash_input", field.val());
-}
-
-/**
  * Called when we want to start automatically hashing the password value in the field.
  * @param {jQuery} field Field that we want to start hashing.
  */
 function startHashingField(field) {
-	// If the field does not have focus, hash its password
-	if (!field.is(":focus"))
-		hashField(field);
+	var password = "";
 
 	// Don't bother re-doing the event bindings if the field is already being hashed
-	if (field.attr("passhash") == "true")
-		return;
+	if (!field.data("__passhash_eventsBound")) {
+		field.data("__passhash_eventsBound", "true");
 
-	field.attr("passhash", "true");
+		// Replace the value in the field with the password on focus
+		field.bind("focus", function (event) {
+			var eventField = $(event.target);	
+			
+			if (eventField.attr("passhash") == "true")
+				eventField.val(password);
+		});
+
+		// Save the password and then hash the field's value on blur
+		field.bind("blur", function (event) {
+			var eventField = $(event.target);
+
+			if (eventField.attr("passhash") == "true") {
+				password = eventField.val();
+				hashField(eventField);
+			}
+		});
+
+		// Save the password on change
+		field.bind("change", function (event) {
+			var eventField = $(event.target);
+			
+			if (eventField.attr("passhash") == "true")
+				password = eventField.val();
+		});
+
+		// Fire the blur event (which hashes the password) if the enter button is pressed
+		field.bind("keypress", function (event) {
+			if (event.which == 13 && $(event.target).attr("passhash") == "true")
+				$(event.target).blur();
+		});
+		
+		// Rehash the field with the update config values
+		field.bind("updateConfig", function (event) {
+			var eventField = $(event.target);
+			
+			if (!eventField.is(":focus"))
+				hashField(eventField);
+		});
+	}
 	
-	// Bind the field to the various event handlers
-	field.bind("focus", field_focus);
-	field.bind("blur", field_blur);
-	field.bind("change", field_change);
-	field.bind("keypress", field_keypress);
+	/**
+	 * Hashes the value of the given field and replaces its value with the hashed version.
+	 * @param {jQuery} field Field whose value we are to hash.
+	 */
+	function hashField(field) {
+		if (password != "")
+			field.val(generateHash(config, password));
+	}
+	
+	// If the field was already being hashed, update its config
+	if (field.attr("passhash") == "true")
+		field[0].dispatchEvent(updateEvent);
+	
+	else
+		password = field.val();
+	
+	field.attr("passhash", "true");
 }
 
 /**
@@ -139,52 +146,60 @@ function stopHashingField(field) {
 		return;
 
 	field.attr("passhash", "false");
-
-	// Unbind the field from the various event handlers	
-	field.unbind("focus", field_focus);
-	field.unbind("blur", field_blur);
-	field.unbind("change", field_change);
-	field.unbind("keypress", field_keypress);
 }
 
 /**
- * Hashes the value of the given field and replaces its value with the hashed version.
- * @param {jQuery} field Field whose value we are to hash.
+ * Called when an update config message is received on the extension port; applies the new config to all 
+ * password fields in the document.
+ * @param {Object} message Message containing the updated config.
  */
-function hashField(field) {
-	var input = field.data("__passhash_input"); 
+function updateConfig(message) {
+	config = message.config;
 		
-	if (input != "" && !(typeof input == "undefined"))
-		field.val(generateHash(config, input));
+	// Apply the new config to each password field on the screen
+	$("input").each(function (index) {
+		var field = $(this);
+
+		if (!field.is("[type=password]") && !field.is("input[passhash]"))
+			return;
+
+		// Field has no ID, so we will make one
+		if (this.id == "")
+			this.id = "passhash_" + id++;
+
+		if (message.config.fields.indexOf(this.id) != -1)
+			startHashingField(field);
+
+		else
+			stopHashingField(field);
+	});
 }
 
-port.onMessage.addListener(function (message) {
-	if (message.type == "updateConfig") {
-		config = message.config;
-	
-		// Apply the new config to each password field on the screen
-		$("input").each(function (index) {
-			var field = $(this);
-		
-			if (!field.is("[type=password]") && !field.is("input[passhash]"))
-				return;
-		
-			// Field has no ID, so we will make one
-			if (this.id == "")
-				this.id = "passhash_" + id++;
-				
-			if (message.config.fields.indexOf(this.id) != -1)
-				startHashingField(field);
-				
-			else
-				stopHashingField(field);
-		});
-	}
-	
+/**
+ * Called when we want to show or hide the value in a password field.
+ * @param {Object} message Message that triggered the event.
+ */
+function showHideValue(message) {
 	// Change the type of the field between text and password if the user wants to see the hashed value
+	focusedField[0].type = focusedField[0].type == "text" ? "password" : "text";
+}
+
+/**
+ * Called whenever a message is received on the extension port and routes it to the correct handler.
+ * @param {Object} message Message that we received.
+ */
+function port_message(message) {
+	if (message.type == "updateConfig") 
+		updateConfig(message);
+		
 	else if (message.type == "showHideValue")
-		focusedField[0].type = focusedField[0].type == "text" ? "password" : "text";
-});
+		showHideValue(message);
+}
+
+var updateEvent = document.createEvent("HTMLEvents");
+updateEvent.initEvent("updateConfig", true, true);
+
+port.onMessage.addListener(port_message);
 
 // Send an init message indicating that everything is ready
 port.postMessage({
