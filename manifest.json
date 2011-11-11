@@ -5,7 +5,7 @@
       "css": [ "styles.css" ],
       "js": [ "lib/jquery-1.7.min.js", "lib/sha1.js", "lib/passhashcommon.js", "common.js", "content.js" ],
       "matches": [ "http://*/*", "https://*/*" ],
-      "run_at": "document_end"
+      "run_at": "document_idle"
    } ],
    "description": "Password Hasher Ultimate automatically enhances password strength (length and difficulty) to protect your accounts.",
    "icons": {
